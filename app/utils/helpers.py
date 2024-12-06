@@ -16,4 +16,4 @@ def parse_jira_datetime(dt_str: str) -> datetime:
 
 def format_issue_message(issue_key: str, summary: str, status: str) -> str:
     """Format Jira issue message for Telegram."""
-    return f"🎯 *Задача:* [{issue_key}]\n📝 *Название:* {summary}\n📊 *Статус:* {status}" 
+    return f"🎯 **Задача:** [{issue_key}]\n📝 **Название:** {summary}\n📊 **Статус:** {status}"
