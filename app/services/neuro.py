@@ -30,7 +30,7 @@ def get_issue(client, model, message):
     return response["message"]["content"]
 
 
-def send_message(message: str, model: str = "qwen2.5") -> str:
+def send_message(message: str, model: str = "qwen2.5:14b") -> str:
     """
     Отправляет сообщение в модель Ollama и возвращает ответ.
 
@@ -44,9 +44,9 @@ def send_message(message: str, model: str = "qwen2.5") -> str:
     try:
         # Загружаем модель из Modelfile
         modelfile_path = os.path.join(settings.FILES_DIR, "Modelfile")
-        with open(modelfile_path, "r") as file:
-            modelfile_content = file.read()
-        ollama_client.create(model="worklog", modelfile=modelfile_content)
-        return get_issue(ollama_client, model, str(message))
+        promt_path = os.path.join(settings.FILES_DIR, "promt")
+        with open(promt_path, "r") as file:
+            promt = file.read()
+        return get_issue(ollama_client, model, str(promt + message))
     except Exception as e:
         return f"Ошибка при отправке сообщения: {str(e)}"
