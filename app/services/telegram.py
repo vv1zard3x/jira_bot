@@ -10,7 +10,9 @@ from app.core.config import settings
 from app.core.database import SessionLocal, User
 from app.services.jira import JiraService
 from app.services.neuro import send_message
-from app.utils.helpers import format_issue_message, format_datetime, parse_jira_datetime
+from app.utils.helpers import format_issue_message, format_worklog_message
+
+from jira import JIRAError
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -31,29 +33,6 @@ def get_db():
         return db
     finally:
         db.close()
-
-def format_worklog_message(worklog_entries: dict) -> str:
-    """Форматирование сообщения с отчетом о раоте."""
-    if not worklog_entries:
-        return "За последние 3 дня нет записей о работе."
-        
-    message = "📊 *Отчет о затраченном времени за последние 3 дня*\n\n"
-    
-    for issue_key, entries in worklog_entries.items():
-        message += f"🔹 *Задача:* [{issue_key}]({settings.JIRA_URL}/browse/{issue_key})\n"
-        message += f"*Название:* {entries[0]['issue_summary']}\n\n"
-        
-        for entry in entries:
-            date = parse_jira_datetime(entry['date']).strftime("%d-%m-%y %H:%M")
-            message += f"⏰ {date}\n"
-            message += f"⌛️ *Затрачено:* {entry['time_spent']}\n"
-            if entry['comment']:
-                message += f"💬 *Комментарий:*\n{entry['comment']}\n"
-            message += "\n"
-        
-        message += "─────────────────\n"
-    
-    return message
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
@@ -244,6 +223,9 @@ async def process_issue_key(message: types.Message, state: FSMContext):
             status=issue.fields.status.name
         )
         await message.reply(response, parse_mode="Markdown")
+    except JIRAError as e:
+        logger.error(f"Error getting issue: {e.text}")
+        await message.reply(f"❌ Ошибка при получении задачи: {e.text}")
     except Exception as e:
         logger.error(f"Error getting issue: {e}")
         await message.reply(f"❌ Ошибка при получении задачи: {str(e)}")
