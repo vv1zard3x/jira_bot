@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import SessionLocal, User
 from app.services.jira import JiraService
+from app.services.neuro import send_message
 from app.utils.helpers import format_issue_message, format_datetime, parse_jira_datetime
 
 # Настройка логирования
@@ -100,6 +101,35 @@ async def worklog_command(message: types.Message):
         logger.error(f"Error getting worklog: {e}")
         await message.reply(f"❌ Ошибка при получении отчета: {str(e)}")
 
+
+@dp.message_handler(commands=["worklog_neuro"])
+async def worklog_command(message: types.Message):
+    """Получение отчета о работе за последние 3 дня с помощью нейросети."""
+    # Проверяем наличие токена
+    db = get_db()
+    user = db.query(User).filter(User.telegram_id == message.from_user.id).first()
+    if not user or not user.jira_token:
+        await message.reply(
+            "❌ Токен не установлен. Используйте /set_token чтобы установить токен."
+        )
+        return
+
+    try:
+        # Получаем данные из Jira
+        jira = JiraService(token=user.jira_token)
+        worklog_entries = jira.get_recent_worklog(days=3)
+
+        formatted_worklog = format_worklog_message(worklog_entries)
+        # Форматируем и отправляем сообщение
+        response = send_message(formatted_worklog)
+        await message.reply(
+            response, parse_mode="Markdown", disable_web_page_preview=True
+        )
+    except Exception as e:
+        logger.error(f"Error getting worklog: {e}")
+        await message.reply(f"❌ Ошибка при получении отчета: {str(e)}")
+
+
 @dp.message_handler(commands=['set_token'])
 async def set_token_command(message: types.Message):
     # Удаляем сообщение с командой для безопасности
@@ -188,12 +218,14 @@ async def remove_token_command(message: types.Message):
 @dp.message_handler(commands=['get_issue'])
 async def get_issue_command(message: types.Message):
     await UserStates.waiting_for_issue_key.set()
-    await message.reply("Введите ключ задачи (например, PROJ-123):")
+    await message.reply(
+        "Введите ключ задачи (например, PROJ-123):", parse_mode="Markdown"
+    )
 
 @dp.message_handler(state=UserStates.waiting_for_issue_key)
 async def process_issue_key(message: types.Message, state: FSMContext):
     issue_key = message.text.strip().upper()
-    
+
     # Проверяем наличие токена
     db = get_db()
     user = db.query(User).filter(User.telegram_id == message.from_user.id).first()
@@ -201,21 +233,21 @@ async def process_issue_key(message: types.Message, state: FSMContext):
         await message.reply("❌ Токен не установлен. Используйте /set_token чтобы установить токен.")
         await state.finish()
         return
-    
+
     try:
         jira = JiraService(token=user.jira_token)
         issue = jira.get_issue(issue_key)
-        
+
         response = format_issue_message(
             issue_key=issue.key,
             summary=issue.fields.summary,
             status=issue.fields.status.name
         )
-        await message.reply(response)
+        await message.reply(response, parse_mode="Markdown")
     except Exception as e:
         logger.error(f"Error getting issue: {e}")
         await message.reply(f"❌ Ошибка при получении задачи: {str(e)}")
-    
+
     await state.finish()
 
 async def on_startup(dp):
