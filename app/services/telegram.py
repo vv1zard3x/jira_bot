@@ -63,7 +63,7 @@ async def start_command(message: types.Message):
         "/set_token - Установить токен Jira\n"
         "/remove_token - Удалить токен\n"
         "/get_issue - Получить информацию о задаче\n"
-        "/worklog - Получить отчет о работе за последние 2 дня\n"
+        "/worklog - Получить отчет о работе за последние 3 дня\n"
         "/help - Показать справку"
     )
 
@@ -87,12 +87,12 @@ async def worklog_command(message: types.Message):
     if not user or not user.jira_token:
         await message.reply("❌ Токен не установлен. Используйте /set_token чтобы установить токен.")
         return
-    
+
     try:
         # Получаем данные из Jira
         jira = JiraService(token=user.jira_token)
-        worklog_entries = jira.get_recent_worklog()
-        
+        worklog_entries = jira.get_recent_worklog(days=3)
+
         # Форматируем и отправляем сообщение
         response = format_worklog_message(worklog_entries)
         await message.reply(response, parse_mode="Markdown", disable_web_page_preview=True)
