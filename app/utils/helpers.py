@@ -47,13 +47,13 @@ def worklog_to_prompt(worklog_entries: dict) -> str:
     """Convert worklog entries to a prompt for the neuro service."""
     message = ""
     for issue_key, entries in worklog_entries.items():
-        message += f"*Задача:* {entries[0]['issue_summary']}\n"
+        message += f"*Задача ({issue_key}):* {entries[0]['issue_summary']} \n"
         for entry in entries:
             if entry["comment"]:
                 message += f"{entry['comment']}\n"
             message += "\n"
     return message
-    
+
 
 def parse_jira_datetime(dt_str: str) -> datetime:
     """Parse Jira datetime string to datetime object."""
