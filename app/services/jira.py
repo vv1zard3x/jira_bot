@@ -54,6 +54,15 @@ class JiraService:
         Returns:
             dict: Dictionary with issue keys as keys and worklog entries as values
         """
+        # Определяем количество дней в зависимости от текущего дня недели
+        today = datetime.now()
+        weekday = today.weekday()  # 0 = понедельник, 6 = воскресенье
+        
+        if weekday == 5:  # Суббота
+            days += 1
+        elif weekday in [6, 0, 1]:  # Воскресенье, понедельник, вторник
+            days += 2
+        
         # Формируем JQL запрос для поиска всех задач с журналом работ пользователя
         jql_query = f"worklogAuthor = currentUser() AND worklogDate >= startOfDay(-{days})"
 
@@ -61,7 +70,6 @@ class JiraService:
         issues = self.client.search_issues(jql_query, maxResults=100)
 
         worklog_entries = {}
-        today = datetime.now()
         days_ago = today - timedelta(days=days)
 
         # Обрабатываем каждую задачу
