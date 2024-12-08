@@ -10,7 +10,6 @@ services:
       - sqlite_data:/app/data
     environment:
       - DATABASE_URL=sqlite:///data/bot.db
-    command: ["python", "main.py"]
 
 volumes:
   sqlite_data: 
