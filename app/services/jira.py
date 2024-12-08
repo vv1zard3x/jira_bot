@@ -46,23 +46,38 @@ class JiraService:
 
     def get_recent_worklog(self, days: int = 3) -> dict:
         """
-        Get worklog entries for the current user for the last N days.
+        Get worklog entries for the current user based on current time period.
         
-        Args:
-            days (int): Number of days to look back (default: 3)
-            
         Returns:
             dict: Dictionary with issue keys as keys and worklog entries as values
         """
-        # Определяем количество дней в зависимости от текущего дня недели
         today = datetime.now()
         weekday = today.weekday()  # 0 = понедельник, 6 = воскресенье
+        current_time = today.time()
+        mid_day = datetime.strptime("14:30", "%H:%M").time()
         
-        if weekday == 5:  # Суббота
-            days += 1
-        elif weekday in [6, 0, 1]:  # Воскресенье, понедельник, вторник
-            days += 2
-        
+        # Определяем начальную дату для запроса в зависимости от текущего дня и времени
+        if weekday == 0 and current_time <= mid_day:  # Понедельник до 14:30
+            days = 3  # С пятницы 14:30
+        elif weekday == 0 and current_time > mid_day:  # Понедельник после 14:30
+            days = 0  # С понедельника 14:30
+        elif weekday == 1:  # Вторник
+            days = 1
+        elif weekday == 2 and current_time <= mid_day:  # Среда до 14:30
+            days = 2
+        elif weekday == 2 and current_time > mid_day:  # Среда после 14:30
+            days = 0  # С среды 14:30
+        elif weekday == 3:  # Четверг
+            days = 1
+        elif weekday == 4 and current_time <= mid_day:  # Пятница до 14:30
+            days = 2
+        elif weekday == 4 and current_time > mid_day:  # Пятница после 14:30
+            days = 0  # С пятницы 14:30
+        elif weekday == 5:  # Суббота
+            days = 1
+        else:  # Воскресенье
+            days = 2
+
         # Формируем JQL запрос для поиска всех задач с журналом работ пользователя
         jql_query = f"worklogAuthor = currentUser() AND worklogDate >= startOfDay(-{days})"
 
