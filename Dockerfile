@@ -11,6 +11,3 @@ RUN mkdir -p /app/data
 
 # Копирование кода приложения
 COPY . .
-
-# Запуск бота
-CMD ["python", "main.py"] 
